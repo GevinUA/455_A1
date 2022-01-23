@@ -2,10 +2,12 @@
 gtp_connection.py
 Module for playing games of Go using GoTextProtocol
 
-Parts of this code were originally based on the gtp module 
-in the Deep-Go project by Isaac Henrion and Amos Storkey 
+Parts of this code were originally based on the gtp module
+in the Deep-Go project by Isaac Henrion and Amos Storkey
 at the University of Edinburgh.
 """
+from queue import Empty
+import string
 import traceback
 from sys import stdin, stdout, stderr
 from board_util import (
@@ -31,7 +33,7 @@ class GtpConnection:
         ----------
         go_engine:
             a program that can reply to a set of GTP commandsbelow
-        board: 
+        board:
             Represents the current board state.
         """
         self._debug_mode = debug_mode
@@ -50,6 +52,7 @@ class GtpConnection:
             "genmove": self.genmove_cmd,
             "list_commands": self.list_commands_cmd,
             "play": self.play_cmd,
+            "gogui-rules_legal_moves": self.gogui_rules_legal_moves_cmd
         }
 
         # used for argument checking
@@ -72,7 +75,7 @@ class GtpConnection:
 
     def start_connection(self):
         """
-        Start a GTP connection. 
+        Start a GTP connection.
         This function continuously monitors standard input for commands.
         """
         line = stdin.readline()
@@ -104,7 +107,8 @@ class GtpConnection:
                 self.commands[command_name](args)
             except Exception as e:
                 self.debug_msg("Error executing command {}\n".format(str(e)))
-                self.debug_msg("Stack Trace:\n{}\n".format(traceback.format_exc()))
+                self.debug_msg("Stack Trace:\n{}\n".format(
+                    traceback.format_exc()))
                 raise e
         else:
             self.debug_msg("Unknown command: {}\n".format(command_name))
@@ -208,6 +212,7 @@ class GtpConnection:
     Assignment 1 - commands we already implemented for you
     ==========================================================================
     """
+
     def gogui_analyze_cmd(self, args):
         """ We already implemented this function for Assignment 1 """
         self.respond("pstring/Legal Moves For ToPlay/gogui-rules_legal_moves\n"
@@ -238,7 +243,7 @@ class GtpConnection:
         for row in range(size-1, -1, -1):
             start = self.board.row_start(row + 1)
             for i in range(size):
-                #str += '.'
+                # str += '.'
                 point = self.board.board[start + i]
                 if point == BLACK:
                     str += 'X'
@@ -256,14 +261,27 @@ class GtpConnection:
     Assignment 1 - game-specific commands you have to implement or modify
     ==========================================================================
     """
+
     def gogui_rules_final_result_cmd(self, args):
         """ Implement this function for Assignment 1 """
         self.respond("unknown")
 
     def gogui_rules_legal_moves_cmd(self, args):
         """ Implement this function for Assignment 1 """
-        self.respond()
-        return
+        all_emptys = self.board.get_empty_points()
+        color = "b"
+
+        return_list = []
+        for point in all_emptys:
+            legal_status = self.board.is_legal(
+                point, color_to_int(color))
+            if legal_status == True:
+                return_list.append(point)
+        # for i in range(len(return_list)):
+        #     return_list[i] = format_point(
+        #         move_to_coord(str(return_list[i]), self.board.size))
+        self.respond(return_list)
+        return return_list
 
     def play_cmd(self, args):
         """
@@ -274,16 +292,18 @@ class GtpConnection:
             board_move = args[1]
             color = color_to_int(board_color)
             if args[1].lower() == "pass":
-                self.board.play_move(PASS, color)
-                self.board.current_player = GoBoardUtil.opponent(color)
-                self.respond()
+                # self.board.play_move(PASS, color)
+                # self.board.current_player = GoBoardUtil.opponent(color)
+                self.respond("illegal move: "+'"' +
+                             args[0]+' pass"'+" wrong coordinate")
                 return
             coord = move_to_coord(args[1], self.board.size)
             if coord:
                 move = coord_to_point(coord[0], coord[1], self.board.size)
             else:
                 self.error(
-                    "Error executing move {} converted from {}".format(move, args[1])
+                    "Error executing move {} converted from {}".format(
+                        move, args[1])
                 )
                 return
             if not self.board.play_move(move, color):
@@ -310,16 +330,16 @@ class GtpConnection:
         else:
             self.respond("Illegal move: {}".format(move_as_string))
 
-
     """
     ==========================================================================
     Assignment 1 - game-specific commands end here
     ==========================================================================
     """
 
+
 def point_to_coord(point, boardsize):
     """
-    Transform point given as board array index 
+    Transform point given as board array index
     to (row, col) coordinate representation.
     Special case: PASS is not transformed
     """

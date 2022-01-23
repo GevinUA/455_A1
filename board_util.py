@@ -54,6 +54,8 @@ of elements that fulfill the condition.
 For 1-d arrays, this is a singleton tuple.
 The [0] indexing is needed to extract the result from the singleton tuple.
 """
+
+
 def where1d(condition):
     return np.where(condition)[0]
 
@@ -70,13 +72,13 @@ def coord_to_point(row, col, boardsize):
     Returns
     -------
     point
-    
+
     Map (row, col) coordinates to array index
     Below is an example of numbering points on a 3x3 board.
     Spaces are added for illustration to separate board points 
     from BORDER points.
     There is a one point BORDER between consecutive rows (e.g. point 12).
-    
+
     16   17 18 19   20
 
     12   13 14 15
@@ -182,5 +184,5 @@ class GoBoardUtil(object):
         board2d = np.zeros((size, size), dtype=GO_POINT)
         for row in range(size):
             start = goboard.row_start(row + 1)
-            board2d[row, :] = goboard.board[start : start + size]
+            board2d[row, :] = goboard.board[start: start + size]
         return board2d
