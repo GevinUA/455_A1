@@ -378,10 +378,8 @@ class GtpConnection:
             if coord:
                 move = coord_to_point(coord[0], coord[1], self.board.size)
             else:
-                self.error(
-                    "Error executing move {} converted from {}".format(
-                        move, args[1])
-                )
+                self.respond(
+                    'illegal move: "{} {}" wrong coordinate'.format(args[0], args[1]))
                 return
 
             occupied_validity = self.occupied_checker(move)
@@ -476,17 +474,21 @@ def move_to_coord(point_str, board_size):
     try:
         col_c = s[0]
         if (not "a" <= col_c <= "z") or col_c == "i":
-            raise ValueError
+            # raise ValueError
+            return False
         col = ord(col_c) - ord("a")
         if col_c < "i":
             col += 1
         row = int(s[1:])
         if row < 1:
-            raise ValueError
+            # raise ValueError
+            return False
     except (IndexError, ValueError):
-        raise ValueError("invalid point: '{}'".format(s))
+        # raise ValueError("invalid point: '{}'".format(s))
+        return False
     if not (col <= board_size and row <= board_size):
-        raise ValueError("point off board: '{}'".format(s))
+        # raise ValueError("point off board: '{}'".format(s))
+        return False
     return row, col
 
 
