@@ -348,11 +348,6 @@ class GtpConnection:
             return False
         return True
 
-    def suicide_checker(self, point, color):
-        # if there is suicide, return False, True otherwise
-        bool_flag = self.board.play_move(point, color)
-        return bool_flag
-
     def play_cmd(self, args):
         """
         play a move args[1] for given color args[0] in {'b','w'}
@@ -388,21 +383,20 @@ class GtpConnection:
                     'illegal move: "{} {}" occupied'.format(args[0], args[1]))
                 return
 
+            if self.board.check_suicide(move, color):
+                self.respond(
+                    'illegal move: "{} {}" suicide'.format(args[0], args[1]))
+                return
+
             if self.capture_detection(move, self.board.current_player):
                 self.respond(
                     'illegal move: "{} {}" capture'.format(args[0], args[1]))
                 return
 
-            if not self.suicide_checker(move, color):
-                self.respond(
-                    'illegal move: "{} {}" suicide'.format(args[0], args[1]))
-                return
-
             # if not self.board.play_move(move, color):
             #     self.respond("Illegal Move: {}".format(board_move))
             #     return
-
-            else:
+            if not self.board.play_move(move, color):
                 self.debug_msg(
                     "Move: {}\nBoard:\n{}\n".format(board_move, self.board2d())
                 )
