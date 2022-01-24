@@ -216,8 +216,6 @@ class GoBoard(object):
             self.last2_move = self.last_move
             self.last_move = point
             return True
-        if point == PASS:
-            return False
         elif self.board[point] != EMPTY:
             return False
         if point == self.ko_recapture:

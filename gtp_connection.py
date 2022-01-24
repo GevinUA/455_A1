@@ -264,9 +264,15 @@ class GtpConnection:
     def gogui_rules_final_result_cmd(self, args):
         """ Implement this function for Assignment 1 """
         if len(self.legal_move_helper()) == 0:
-            self.respond(self.board.current_player)
-            return
-        self.respond("unknown")
+            if (self.board.current_player == 1):
+                self.respond("white")
+            else:
+                self.respond("black")
+            # self.respond(self.board.current_player)
+        # self.respond(self.legal_move_helper())
+        else:
+            self.respond(self.legal_move_helper())
+        return
 
     def capture_detection(self, point, color):
         '''
@@ -281,6 +287,8 @@ class GtpConnection:
         tmp_list_original = list(empty_points_original)
         tmp_list_monitor = list(monitor_points_after)
         tmp_list_original.remove(point)
+        # tmp_list_original.sort()
+        # tmp_list_monitor.sort()
         if(tmp_list_original == tmp_list_monitor):
             return False
         # if(len(empty_points_original)-1 == len(monitor_points_after)):
@@ -312,6 +320,7 @@ class GtpConnection:
     def legal_move_helper(self):
         all_emptys = self.board.get_empty_points()
         color = self.board.current_player
+        #color = GoBoardUtil.opponent(color)
         return_list = []
         for point in all_emptys:
             legal_status = self.board.is_legal(
@@ -320,11 +329,6 @@ class GtpConnection:
             if legal_status == True:
                 if not self.capture_detection(point, color):
                     return_list.append(point)
-
-        # format the list
-        for i in range(len(return_list)):
-            return_list[i] = format_point(
-                point_to_coord(return_list[i], self.board.size))
         return return_list
 
     def color_checker(self, input_color):
@@ -338,6 +342,16 @@ class GtpConnection:
         if not column.isdigit():
             return False
         return True
+
+    def occupied_checker(self, point):
+        if self.board.get_color(point) != 0:
+            return False
+        return True
+
+    def suicide_checker(self, point, color):
+        # if there is suicide, return False, True otherwise
+        bool_flag = self.board.play_move(point, color)
+        return bool_flag
 
     def play_cmd(self, args):
         """
@@ -369,9 +383,27 @@ class GtpConnection:
                         move, args[1])
                 )
                 return
-            if not self.board.play_move(move, color):
-                self.respond("Illegal Move: {}".format(board_move))
+
+            occupied_validity = self.occupied_checker(move)
+            if not occupied_validity:
+                self.respond(
+                    'illegal move: "{} {}" occupied'.format(args[0], args[1]))
                 return
+
+            if self.capture_detection(move, self.board.current_player):
+                self.respond(
+                    'illegal move: "{} {}" capture'.format(args[0], args[1]))
+                return
+
+            if not self.suicide_checker(move, color):
+                self.respond(
+                    'illegal move: "{} {}" suicide'.format(args[0], args[1]))
+                return
+
+            # if not self.board.play_move(move, color):
+            #     self.respond("Illegal Move: {}".format(board_move))
+            #     return
+
             else:
                 self.debug_msg(
                     "Move: {}\nBoard:\n{}\n".format(board_move, self.board2d())
