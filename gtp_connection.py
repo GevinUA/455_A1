@@ -369,6 +369,13 @@ class GtpConnection:
                         move, args[1])
                 )
                 return
+
+            # Check if capture will occur after the move
+            if self.board.check_capture(move, color):
+                self.respond(
+                    'illegal move: "{} {}" capture'.format(args[0], args[1]))
+                return
+
             if not self.board.play_move(move, color):
                 self.respond("Illegal Move: {}".format(board_move))
                 return
