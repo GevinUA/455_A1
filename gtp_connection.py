@@ -271,7 +271,7 @@ class GtpConnection:
             # self.respond(self.board.current_player)
         # self.respond(self.legal_move_helper())
         else:
-            self.respond(self.legal_move_helper())
+            self.respond("unknown")
         return
 
     def capture_detection(self, point, color):
@@ -420,9 +420,11 @@ class GtpConnection:
         move_coord = point_to_coord(move, self.board.size)
         move_as_string = format_point(move_coord)
         if self.board.is_legal(move, color):
-            # if not self.capture_detection(move, color):
-            self.board.play_move(move, color)
-            self.respond(move_as_string)
+            if not self.capture_detection(move, color):
+                self.board.play_move(move, color)
+                self.respond(move_as_string)
+            else:
+                self.respond("resign")
         else:
             self.respond("Illegal move: {}".format(move_as_string))
 
