@@ -266,21 +266,35 @@ class GtpConnection:
         """ Implement this function for Assignment 1 """
         self.respond("unknown")
 
+    def capture_detection(self, point, color):
+        monitor_board = self.board.copy()
+        empty_points_original = self.board.get_empty_points()
+        monitor_board.play_move(point, color)
+        monitor_points_after = monitor_board.get_empty_points()
+        if(len(empty_points_original)-1 == len(monitor_points_after)):
+            return False
+        return True
+
     def gogui_rules_legal_moves_cmd(self, args):
         """ Implement this function for Assignment 1 """
         all_emptys = self.board.get_empty_points()
-        color = "b"
-
+        color = self.board.current_player
         return_list = []
         for point in all_emptys:
             legal_status = self.board.is_legal(
-                point, color_to_int(color))
+                point, color)
+
             if legal_status == True:
-                return_list.append(point)
-        # for i in range(len(return_list)):
-        #     return_list[i] = format_point(
-        #         move_to_coord(str(return_list[i]), self.board.size))
-        self.respond(return_list)
+                if not self.capture_detection(point, color):
+                    return_list.append(point)
+
+        # format the list
+        for i in range(len(return_list)):
+            return_list[i] = format_point(
+                point_to_coord(return_list[i], self.board.size))
+
+        return_list.sort(key=lambda x: x[0])
+        self.respond(' '.join(return_list))
         return return_list
 
     def play_cmd(self, args):
@@ -291,12 +305,15 @@ class GtpConnection:
             board_color = args[0].lower()
             board_move = args[1]
             color = color_to_int(board_color)
+
+            # pass is not allowed
             if args[1].lower() == "pass":
                 # self.board.play_move(PASS, color)
                 # self.board.current_player = GoBoardUtil.opponent(color)
-                self.respond("illegal move: "+'"' +
-                             args[0]+' pass"'+" wrong coordinate")
+                self.respond(
+                    'illegal move: "{} {}" wrong coordinate'.format(args[0], args[1]))
                 return
+
             coord = move_to_coord(args[1], self.board.size)
             if coord:
                 move = coord_to_point(coord[0], coord[1], self.board.size)
