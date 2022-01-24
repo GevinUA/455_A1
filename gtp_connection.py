@@ -6,8 +6,6 @@ Parts of this code were originally based on the gtp module
 in the Deep-Go project by Isaac Henrion and Amos Storkey
 at the University of Edinburgh.
 """
-from queue import Empty
-import string
 import traceback
 from sys import stdin, stdout, stderr
 from board_util import (
@@ -52,7 +50,8 @@ class GtpConnection:
             "genmove": self.genmove_cmd,
             "list_commands": self.list_commands_cmd,
             "play": self.play_cmd,
-            "gogui-rules_legal_moves": self.gogui_rules_legal_moves_cmd
+            "gogui-rules_legal_moves": self.gogui_rules_legal_moves_cmd,
+            "gogui-rules_final_result": self.gogui_rules_final_result_cmd,
         }
 
         # used for argument checking
@@ -264,15 +263,28 @@ class GtpConnection:
 
     def gogui_rules_final_result_cmd(self, args):
         """ Implement this function for Assignment 1 """
+        if len(self.legal_move_helper()) == 0:
+            self.respond(self.board.current_player)
+            return
         self.respond("unknown")
 
     def capture_detection(self, point, color):
+        '''
+        return True if there is capture happens
+        else False
+        '''
         monitor_board = self.board.copy()
         empty_points_original = self.board.get_empty_points()
         monitor_board.play_move(point, color)
         monitor_points_after = monitor_board.get_empty_points()
-        if(len(empty_points_original)-1 == len(monitor_points_after)):
+
+        tmp_list_original = list(empty_points_original)
+        tmp_list_monitor = list(monitor_points_after)
+        tmp_list_original.remove(point)
+        if(tmp_list_original == tmp_list_monitor):
             return False
+        # if(len(empty_points_original)-1 == len(monitor_points_after)):
+        #     return False
         return True
 
     def gogui_rules_legal_moves_cmd(self, args):
@@ -297,6 +309,36 @@ class GtpConnection:
         self.respond(' '.join(return_list))
         return return_list
 
+    def legal_move_helper(self):
+        all_emptys = self.board.get_empty_points()
+        color = self.board.current_player
+        return_list = []
+        for point in all_emptys:
+            legal_status = self.board.is_legal(
+                point, color)
+
+            if legal_status == True:
+                if not self.capture_detection(point, color):
+                    return_list.append(point)
+
+        # format the list
+        for i in range(len(return_list)):
+            return_list[i] = format_point(
+                point_to_coord(return_list[i], self.board.size))
+        return return_list
+
+    def color_checker(self, input_color):
+        if(input_color != self.board.current_player):
+            return False
+        return True
+
+    def coordinate_checker(self, color, point):
+        row = point[0]
+        column = point[1]
+        if not column.isdigit():
+            return False
+        return True
+
     def play_cmd(self, args):
         """
         play a move args[1] for given color args[0] in {'b','w'}
@@ -306,10 +348,14 @@ class GtpConnection:
             board_move = args[1]
             color = color_to_int(board_color)
 
+            color_validity = self.color_checker(color)
+            if not color_validity:
+                self.respond(
+                    'illegal move: "{} {}" wrong color'.format(args[0], args[1]))
+                return
             # pass is not allowed
-            if args[1].lower() == "pass":
-                # self.board.play_move(PASS, color)
-                # self.board.current_player = GoBoardUtil.opponent(color)
+            coordinate_validity = self.coordinate_checker(args[0], args[1])
+            if not coordinate_validity:
                 self.respond(
                     'illegal move: "{} {}" wrong coordinate'.format(args[0], args[1]))
                 return
@@ -342,6 +388,7 @@ class GtpConnection:
         move_coord = point_to_coord(move, self.board.size)
         move_as_string = format_point(move_coord)
         if self.board.is_legal(move, color):
+            # if not self.capture_detection(move, color):
             self.board.play_move(move, color)
             self.respond(move_as_string)
         else:
