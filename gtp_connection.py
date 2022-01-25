@@ -348,11 +348,6 @@ class GtpConnection:
             return False
         return True
 
-    def suicide_checker(self, point, color):
-        # if there is suicide, return False, True otherwise
-        bool_flag = self.board.play_move(point, color)
-        return bool_flag
-
     def play_cmd(self, args):
         """
         play a move args[1] for given color args[0] in {'b','w'}
@@ -378,10 +373,8 @@ class GtpConnection:
             if coord:
                 move = coord_to_point(coord[0], coord[1], self.board.size)
             else:
-                self.error(
-                    "Error executing move {} converted from {}".format(
-                        move, args[1])
-                )
+                self.respond(
+                    'illegal move: "{} {}" wrong coordinate'.format(args[0], args[1]))
                 return
 
             occupied_validity = self.occupied_checker(move)
@@ -390,21 +383,20 @@ class GtpConnection:
                     'illegal move: "{} {}" occupied'.format(args[0], args[1]))
                 return
 
+            if self.board.check_suicide(move, color):
+                self.respond(
+                    'illegal move: "{} {}" suicide'.format(args[0], args[1]))
+                return
+
             if self.capture_detection(move, self.board.current_player):
                 self.respond(
                     'illegal move: "{} {}" capture'.format(args[0], args[1]))
                 return
 
-            if not self.suicide_checker(move, color):
-                self.respond(
-                    'illegal move: "{} {}" suicide'.format(args[0], args[1]))
-                return
-
             # if not self.board.play_move(move, color):
             #     self.respond("Illegal Move: {}".format(board_move))
             #     return
-
-            else:
+            if not self.board.play_move(move, color):
                 self.debug_msg(
                     "Move: {}\nBoard:\n{}\n".format(board_move, self.board2d())
                 )
@@ -419,6 +411,9 @@ class GtpConnection:
         move = self.go_engine.get_move(self.board, color)
         move_coord = point_to_coord(move, self.board.size)
         move_as_string = format_point(move_coord)
+        if (color_to_int(args[0]) != self.board.current_player):
+            self.respond('illegal move: "{}" wrong color'.format(args[0]))
+            return
         if self.board.is_legal(move, color):
             if not self.capture_detection(move, color):
                 self.board.play_move(move, color)
@@ -476,17 +471,21 @@ def move_to_coord(point_str, board_size):
     try:
         col_c = s[0]
         if (not "a" <= col_c <= "z") or col_c == "i":
-            raise ValueError
+            # raise ValueError
+            return False
         col = ord(col_c) - ord("a")
         if col_c < "i":
             col += 1
         row = int(s[1:])
         if row < 1:
-            raise ValueError
+            # raise ValueError
+            return False
     except (IndexError, ValueError):
-        raise ValueError("invalid point: '{}'".format(s))
+        # raise ValueError("invalid point: '{}'".format(s))
+        return False
     if not (col <= board_size and row <= board_size):
-        raise ValueError("point off board: '{}'".format(s))
+        # raise ValueError("point off board: '{}'".format(s))
+        return False
     return row, col
 
 

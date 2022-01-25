@@ -278,17 +278,13 @@ class GoBoard(object):
         # self.last_move = point
         # return True
 
-    def check_capture(self, point, color):
-        self.board[point] = color
-        neighbors = self._neighbors(point)
-        opp_color = GoBoardUtil.opponent(color)
-        for nb in neighbors:
-            if self.board[nb] == opp_color:
-                single_capture = self._detect_and_process_capture(nb)
-                if single_capture != None:
-                    return True
-        self.board[point] = EMPTY
-        return False
+    def check_suicide(self, point, color):
+        board_copy = self.copy()  # Copy current board to check if the point to move is suicide
+        board_copy.board[point] = color
+        block = board_copy._block_of(point)
+        if board_copy._has_liberty(block):
+            return False
+        return True
 
     def neighbors_of_color(self, point, color):
         """ List of neighbors of point of given color """
