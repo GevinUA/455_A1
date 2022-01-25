@@ -52,6 +52,11 @@ class GtpConnection:
             "play": self.play_cmd,
             "gogui-rules_legal_moves": self.gogui_rules_legal_moves_cmd,
             "gogui-rules_final_result": self.gogui_rules_final_result_cmd,
+            "gogui-rules_side_to_move": self.gogui_rules_side_to_move_cmd,
+            "gogui-rules_game_id": self.gogui_rules_game_id_cmd,
+            "gogui-rules_board": self.gogui_rules_board_cmd,
+            "gogui-analyze_commands": self.gogui_analyze_cmd,
+            "gogui-rules_board_size": self.gogui_rules_board_size_cmd
         }
 
         # used for argument checking
